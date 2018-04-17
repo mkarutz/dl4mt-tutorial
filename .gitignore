@@ -103,5 +103,8 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-.gitignore
 .idea/
+data/training
+data/dev
+*.tgz
+*.pkl
