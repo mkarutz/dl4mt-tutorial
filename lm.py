@@ -1,21 +1,19 @@
 '''
 Build a simple neural language model using GRU units
 '''
+import copy
+import os
+import pickle as pkl
+import sys
+import time
+import warnings
+from collections import OrderedDict
+
+import ipdb
+import numpy
 import theano
 import theano.tensor as tensor
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
-
-import pickle as pkl
-import ipdb
-import numpy
-import copy
-
-import os
-import warnings
-import sys
-import time
-
-from collections import OrderedDict
 
 from data_iterator import TextIterator
 
@@ -185,7 +183,7 @@ def prepare_data(seqs_x, maxlen=None, n_words=30000):
     x_mask = numpy.zeros((maxlen_x, n_samples)).astype('float32')
     for idx, s_x in enumerate(seqs_x):
         x[:lengths_x[idx], idx] = s_x
-        x_mask[:lengths_x[idx]+1, idx] = 1.
+        x_mask[:lengths_x[idx] + 1, idx] = 1.
 
     return x, x_mask
 
@@ -212,7 +210,6 @@ def fflayer(tparams, state_below, options, prefix='rconv',
 
 # GRU layer
 def param_init_gru(options, params, prefix='gru', nin=None, dim=None):
-
     if nin is None:
         nin = options['dim_proj']
     if dim is None:
@@ -261,20 +258,20 @@ def gru_layer(tparams, state_below, options, prefix='gru',
     # utility function to slice a tensor
     def _slice(_x, n, dim):
         if _x.ndim == 3:
-            return _x[:, :, n*dim:(n+1)*dim]
-        return _x[:, n*dim:(n+1)*dim]
+            return _x[:, :, n * dim:(n + 1) * dim]
+        return _x[:, n * dim:(n + 1) * dim]
 
     # state_below is the input word embeddings
     # input to the gates, concatenated
     state_below_ = tensor.dot(state_below, tparams[_p(prefix, 'W')]) + \
-        tparams[_p(prefix, 'b')]
+                   tparams[_p(prefix, 'b')]
     # input to compute the hidden state proposal
     state_belowx = tensor.dot(state_below, tparams[_p(prefix, 'Wx')]) + \
-        tparams[_p(prefix, 'bx')]
+                   tparams[_p(prefix, 'bx')]
 
     # step function to be used by scan
     # arguments    | sequences |outputs-info| non-seqs
-    def _step_slice(m_, x_, xx_,  h_,          U, Ux):
+    def _step_slice(m_, x_, xx_, h_, U, Ux):
         preact = tensor.dot(h_, U)
         preact += x_
 
@@ -307,7 +304,7 @@ def gru_layer(tparams, state_below, options, prefix='gru',
         init_state = tensor.unbroadcast(tensor.alloc(0., n_samples, dim), 0)
 
     if one_step:  # sampling
-        rval = _step(*(seqs+[init_state]+shared_vars))
+        rval = _step(*(seqs + [init_state] + shared_vars))
     else:  # training
         rval, updates = theano.scan(_step,
                                     sequences=seqs,
@@ -378,12 +375,12 @@ def build_model(tparams, options):
                                     prefix='ff_logit_lstm', activ='linear')
     logit_prev = get_layer('ff')[1](tparams, emb, options,
                                     prefix='ff_logit_prev', activ='linear')
-    logit = tensor.tanh(logit_lstm+logit_prev)
+    logit = tensor.tanh(logit_lstm + logit_prev)
     logit = get_layer('ff')[1](tparams, logit, options, prefix='ff_logit',
                                activ='linear')
     logit_shp = logit.shape
     probs = tensor.nnet.softmax(
-        logit.reshape([logit_shp[0]*logit_shp[1], logit_shp[2]]))
+        logit.reshape([logit_shp[0] * logit_shp[1], logit_shp[2]]))
 
     # cost
     x_flat = x.flatten()
@@ -420,7 +417,7 @@ def build_sampler(tparams, options, trng):
                                     prefix='ff_logit_lstm', activ='linear')
     logit_prev = get_layer('ff')[1](tparams, emb, options,
                                     prefix='ff_logit_prev', activ='linear')
-    logit = tensor.tanh(logit_lstm+logit_prev)
+    logit = tensor.tanh(logit_lstm + logit_prev)
     logit = get_layer('ff')[1](tparams, logit, options,
                                prefix='ff_logit', activ='linear')
     next_probs = tensor.nnet.softmax(logit)
@@ -438,7 +435,6 @@ def build_sampler(tparams, options, trng):
 
 # generate sample
 def gen_sample(tparams, f_next, options, trng=None, maxlen=30, argmax=False):
-
     sample = []
     sample_score = 0
 
@@ -490,7 +486,6 @@ def pred_probs(f_log_probs, prepare_data, options, iterator, verbose=True):
 # optimizers
 # name(hyperp, tparams, grads, inputs (list), cost) = f_grad_shared, f_update
 def adam(lr, tparams, grads, inp, cost, beta1=0.9, beta2=0.999, e=1e-8):
-
     gshared = [theano.shared(p.get_value() * 0., name='%s_grad' % k)
                for k, p in tparams.items()]
     gsup = [(gs, g) for gs, g in zip(gshared, grads)]
@@ -501,13 +496,13 @@ def adam(lr, tparams, grads, inp, cost, beta1=0.9, beta2=0.999, e=1e-8):
 
     t_prev = theano.shared(numpy.float32(0.))
     t = t_prev + 1.
-    lr_t = lr * tensor.sqrt(1. - beta2**t) / (1. - beta1**t)
+    lr_t = lr * tensor.sqrt(1. - beta2 ** t) / (1. - beta1 ** t)
 
     for p, g in zip(list(tparams.values()), gshared):
         m = theano.shared(p.get_value() * 0., p.name + '_mean')
         v = theano.shared(p.get_value() * 0., p.name + '_variance')
         m_t = beta1 * m + (1. - beta1) * g
-        v_t = beta2 * v + (1. - beta2) * g**2
+        v_t = beta2 * v + (1. - beta2) * g ** 2
         step = lr_t * m_t / (tensor.sqrt(v_t) + e)
         p_t = p - step
         updates.append((m, m_t))
@@ -536,7 +531,7 @@ def adadelta(lr, tparams, grads, inp, cost):
     rg2up = [(rg2, 0.95 * rg2 + 0.05 * (g ** 2))
              for rg2, g in zip(running_grads2, grads)]
 
-    f_grad_shared = theano.function(inp, cost, updates=zgup+rg2up,
+    f_grad_shared = theano.function(inp, cost, updates=zgup + rg2up,
                                     profile=profile)
 
     updir = [-tensor.sqrt(ru2 + 1e-6) / tensor.sqrt(rg2 + 1e-6) * zg
@@ -547,7 +542,7 @@ def adadelta(lr, tparams, grads, inp, cost):
              for ru2, ud in zip(running_up2, updir)]
     param_up = [(p, p + ud) for p, ud in zip(itemlist(tparams), updir)]
 
-    f_update = theano.function([lr], [], updates=ru2up+param_up,
+    f_update = theano.function([lr], [], updates=ru2up + param_up,
                                on_unused_input='ignore', profile=profile)
 
     return f_grad_shared, f_update
@@ -569,7 +564,7 @@ def rmsprop(lr, tparams, grads, inp, cost):
     rg2up = [(rg2, 0.95 * rg2 + 0.05 * (g ** 2))
              for rg2, g in zip(running_grads2, grads)]
 
-    f_grad_shared = theano.function(inp, cost, updates=zgup+rgup+rg2up,
+    f_grad_shared = theano.function(inp, cost, updates=zgup + rgup + rg2up,
                                     profile=profile)
 
     updir = [theano.shared(p.get_value() * numpy.float32(0.),
@@ -580,14 +575,13 @@ def rmsprop(lr, tparams, grads, inp, cost):
                                             running_grads2)]
     param_up = [(p, p + udn[1])
                 for p, udn in zip(itemlist(tparams), updir_new)]
-    f_update = theano.function([lr], [], updates=updir_new+param_up,
+    f_update = theano.function([lr], [], updates=updir_new + param_up,
                                on_unused_input='ignore', profile=profile)
 
     return f_grad_shared, f_update
 
 
 def sgd(lr, tparams, grads, x, mask, y, cost):
-
     # allocate gradients and set them all to zero
     gshared = [theano.shared(p.get_value() * 0., name='%s_grad' % k)
                for k, p in tparams.items()]
@@ -630,10 +624,9 @@ def train(dim_word=100,  # word vector dimensionality
           dataset='/data/lisatmp3/chokyun/wikipedia/extracted/wiki.tok.txt.gz',
           valid_dataset='../data/dev/newstest2011.en.tok',
           dictionary='/data/lisatmp3/chokyun/wikipedia/extracted/'
-          'wiki.tok.txt.gz.pkl',
+                     'wiki.tok.txt.gz.pkl',
           use_dropout=False,
           reload_=False):
-
     # Model options
     model_options = locals().copy()
 
@@ -675,9 +668,9 @@ def train(dim_word=100,  # word vector dimensionality
 
     # build the symbolic computational graph
     trng, use_noise, \
-        x, x_mask, \
-        opt_ret, \
-        cost = \
+    x, x_mask, \
+    opt_ret, \
+    cost = \
         build_model(tparams, model_options)
     inps = [x, x_mask]
 
@@ -725,11 +718,11 @@ def train(dim_word=100,  # word vector dimensionality
     bad_count = 0
 
     if validFreq == -1:
-        validFreq = len(train[0])/batch_size
+        validFreq = len(train[0]) / batch_size
     if saveFreq == -1:
-        saveFreq = len(train[0])/batch_size
+        saveFreq = len(train[0]) / batch_size
     if sampleFreq == -1:
-        sampleFreq = len(train[0])/batch_size
+        sampleFreq = len(train[0]) / batch_size
 
     # Training loop
     uidx = 0
@@ -764,7 +757,7 @@ def train(dim_word=100,  # word vector dimensionality
             # check for bad numbers
             if numpy.isnan(cost) or numpy.isinf(cost):
                 print('NaN detected')
-                return 1.
+                return 1., 1., 1.
 
             # verbose
             if numpy.mod(uidx, dispFreq) == 0:

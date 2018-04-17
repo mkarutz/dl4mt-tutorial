@@ -1,5 +1,5 @@
-import pickle as pkl
 import gzip
+import pickle as pkl
 
 
 def fopen(filename, mode='r'):
@@ -10,6 +10,7 @@ def fopen(filename, mode='r'):
 
 class TextIterator:
     """Simple Bitext iterator."""
+
     def __init__(self, source, target,
                  source_dict, target_dict,
                  batch_size=128,
@@ -79,7 +80,7 @@ class TextIterator:
                 target.append(tt)
 
                 if len(source) >= self.batch_size or \
-                        len(target) >= self.batch_size:
+                                len(target) >= self.batch_size:
                     break
         except IOError:
             self.end_of_data = True

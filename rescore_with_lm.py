@@ -79,7 +79,7 @@ def build_sampler(tparams, options):
                                     prefix='ff_logit_lstm', activ='linear')
     logit_prev = get_layer('ff')[1](tparams, emb, options,
                                     prefix='ff_logit_prev', activ='linear')
-    logit = tensor.tanh(logit_lstm+logit_prev)
+    logit = tensor.tanh(logit_lstm + logit_prev)
     logit = get_layer('ff')[1](tparams, logit, options,
                                prefix='ff_logit', activ='linear')
     next_probs = tensor.nnet.softmax(logit)
@@ -96,7 +96,6 @@ def build_sampler(tparams, options):
 
 # Scores a given sequence with the language model
 def score_seq(seq, f_next, options, normalize):
-
     next_w = -1 * numpy.ones((1,)).astype('int64')
     next_state = numpy.zeros((1, options['dim'])).astype('float32')
 
@@ -126,7 +125,6 @@ def shallow_fusion(score_lm, score_tm, beta, convex_comb):
 def main(model, model_options, dictionary_lm, dictionary_tm,
          source, saveto, normalize=False, chr_level=False,
          beta=0.5, convex_comb=False):
-
     # load model options
     model_options = pkl.load(open(model_options))
 
@@ -168,7 +166,7 @@ def main(model, model_options, dictionary_lm, dictionary_tm,
             else:
                 words = line.strip().split()
             x = [word_dict_tm[w]
-                    if w in word_dict_tm else 1 for w in words]
+                 if w in word_dict_tm else 1 for w in words]
             x = [ii if ii < model_options['n_words'] else 1 for ii in x]
             x += [0]
 
