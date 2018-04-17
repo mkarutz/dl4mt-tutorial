@@ -4,7 +4,7 @@ from nmt import train
 
 
 def main(job_id, params):
-    print params
+    print(params)
     username = os.environ['USER']
     validerr = train(
         saveto=params['model'][0],

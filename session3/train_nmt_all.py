@@ -4,7 +4,7 @@ import os
 from nmt import train
 
 def main(job_id, params):
-    print params
+    print(params)
     validerr = train(saveto=params['model'][0],
                                         reload_=params['reload'][0],
                                         dim_word=params['dim_word'][0],

@@ -1,13 +1,8 @@
-import numpy
-import os
+from .nmt import train
 
-import numpy
-import os
-
-from nmt import train
 
 def main(job_id, params):
-    print params
+    print(params)
     validerr = train(saveto=params['model'][0],
                      reload_=params['reload'][0],
                      dim_word=params['dim_word'][0],
@@ -26,19 +21,20 @@ def main(job_id, params):
                      dispFreq=10,
                      saveFreq=100,
                      sampleFreq=100,
-                     datasets=['../data/hal/train/tok/en',
-                               '../data/hal/train/tok/fr'],
-                     valid_datasets=['../data/hal/dev/tok/en',
-                                     '../data/hal/dev/tok/fr'],
-                     dictionaries=['../data/hal/train/tok/en.pkl',
-                                   '../data/hal/train/tok/fr.pkl'],
+                     datasets=['data/training/news-commentary-v9.fr-en.en.tok',
+                               'data/training/news-commentary-v9.fr-en.fr.tok'],
+                     valid_datasets=['data/dev/newstest2013.en.tok',
+                                     'data/dev/newstest2013.fr.tok'],
+                     dictionaries=['data/training/news-commentary-v9.fr-en.en.tok.pkl',
+                                   'data/training/news-commentary-v9.fr-en.fr.tok.pkl'],
                      use_dropout=params['use-dropout'][0],
                      overwrite=False)
     return validerr
 
+
 if __name__ == '__main__':
     main(0, {
-        'model': ['model_hal.npz'],
+        'model': ['models/session2.npz'],
         'dim_word': [512],
         'dim': [1024],
         'n-words': [30000],

@@ -4,7 +4,7 @@ import os
 from nmt import train
 
 def main(job_id, params):
-    print params
+    print(params)
     basedir = '/data/lisatmp3/firatorh/nmt/europarlv7'
     validerr = train(saveto=params['model'][0],
                                         reload_=params['reload'][0],

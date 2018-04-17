@@ -1,4 +1,4 @@
-import cPickle as pkl
+import pickle as pkl
 import gzip
 
 
@@ -28,7 +28,7 @@ class TextIterator:
     def reset(self):
         self.source.seek(0)
 
-    def next(self):
+    def __next__(self):
         if self.end_of_data:
             self.end_of_data = False
             self.reset()

@@ -4,7 +4,7 @@ Encode a source file using the encoder of a trained translation model.
 import argparse
 
 import numpy
-import cPickle as pkl
+import pickle as pkl
 
 from nmt import (build_sampler, gen_sample, load_params,
                  init_params, init_tparams)
@@ -38,7 +38,7 @@ def encode_model(queue, rqueue, pid, model, options):
             break
 
         idx, x = req[0], req[1]
-        print pid, '-', idx
+        print(pid, '-', idx)
         cod = _encode(x)
 
         rqueue.put((idx, cod))
@@ -57,7 +57,7 @@ def main(model, dictionary, source_file, saveto,
     with open(dictionary, 'rb') as f:
         word_dict = pkl.load(f)
     word_idict = dict()
-    for kk, vv in word_dict.iteritems():
+    for kk, vv in word_dict.items():
         word_idict[vv] = kk
     word_idict[0] = '<eos>'
     word_idict[1] = 'UNK'
@@ -66,7 +66,7 @@ def main(model, dictionary, source_file, saveto,
     queue = Queue()
     rqueue = Queue()
     processes = [None] * n_process
-    for midx in xrange(n_process):
+    for midx in range(n_process):
         processes[midx] = Process(
             target=encode_model,
             args=(queue, rqueue, midx, model, options,))
@@ -79,33 +79,33 @@ def main(model, dictionary, source_file, saveto,
                     words = list(line.decode('utf-8').strip())
                 else:
                     words = line.strip().split()
-                x = map(lambda w: word_dict[w] if w in word_dict else 1, words)
-                x = map(lambda ii: ii if ii < options['n_words'] else 1, x)
+                x = [word_dict[w] if w in word_dict else 1 for w in words]
+                x = [ii if ii < options['n_words'] else 1 for ii in x]
                 x += [0]
                 queue.put((idx, x))
         return idx+1
 
     def _finish_processes():
-        for midx in xrange(n_process):
+        for midx in range(n_process):
             queue.put(None)
 
     def _retrieve_jobs(n_samples):
         codes = [None] * n_samples
-        for idx in xrange(n_samples):
+        for idx in range(n_samples):
             resp = rqueue.get()
             codes[resp[0]] = resp[1]
             if numpy.mod(idx, 10) == 0:
-                print 'Sample ', (idx+1), '/', n_samples, ' Done'
+                print('Sample ', (idx+1), '/', n_samples, ' Done')
         return codes
 
-    print 'Translating ', source_file, '...'
+    print('Translating ', source_file, '...')
     n_samples = _send_jobs(source_file)
     codes = numpy.array(_retrieve_jobs(n_samples))
     _finish_processes()
     if not saveto.endswith('npy'):
         saveto = saveto + '.npy'
     numpy.save(saveto, codes)
-    print 'Done'
+    print('Done')
 
 
 if __name__ == "__main__":

@@ -1,9 +1,7 @@
-from __future__ import print_function
-
 import numpy
 
 try:
-    import cPickle as pkl
+    import pickle as pkl
 except:
     import pickle as pkl
 
@@ -11,6 +9,7 @@ import sys
 import fileinput
 
 from collections import OrderedDict
+
 
 def main():
     for filename in sys.argv[1:]:
@@ -33,12 +32,13 @@ def main():
         worddict['eos'] = 0
         worddict['UNK'] = 1
         for ii, ww in enumerate(sorted_words):
-            worddict[ww] = ii+2
+            worddict[ww] = ii + 2
 
-        with open('%s.pkl'%filename, 'wb') as f:
+        with open('%s.pkl' % filename, 'wb') as f:
             pkl.dump(worddict, f)
 
         print('Done')
+
 
 if __name__ == '__main__':
     main()
