@@ -108,3 +108,5 @@ data/training
 data/dev
 *.tgz
 *.pkl
+.vscode/
+models/
